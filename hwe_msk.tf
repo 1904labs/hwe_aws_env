@@ -3,6 +3,10 @@ provider "aws" {
     region     = "us-east-1"
 }
 
+resource "aws_s3_bucket" "hwe_2024_spring" {
+    bucket = "hwe-2024-spring"
+}
+
 #KMS key
 resource "aws_kms_key" "hwe_2024_spring_kms_key" {
   description = "KMS key used to encrypt MSK username + password"
@@ -23,6 +27,7 @@ resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
 }
 
 variable "msk_connection_info" {
+  sensitive = true
   default = {
     username = "1904labs"
     password = "TODO: Set password securely"
