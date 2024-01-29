@@ -233,22 +233,3 @@ resource "aws_kms_alias" "hwe_kms_key_alias" {
   name = "alias/hwe_kms_key"
   target_key_id = aws_kms_key.hwe_kms_key.key_id
 }
-
-#Secret for MSK username/password
-resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
-  name = "AmazonMSK_hwe_secret3" #This name MUST start with AmazonMSK_!
-  kms_key_id = aws_kms_key.hwe_kms_key.key_id
-}
-
-variable "msk_connection_info" {
-  sensitive = true
-  default = {
-    username = "1904labs"
-    password = "TODO: Set password securely"
-  }
-}
-
-resource "aws_secretsmanager_secret_version" "amazonmsk_hwe_secret_value" {
-  secret_id = aws_secretsmanager_secret.amazonmsk_hwe_secret.id
-  secret_string = jsonencode(var.msk_connection_info)
-}
