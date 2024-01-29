@@ -193,7 +193,7 @@ resource "aws_iam_policy" "allow_write_to_s3_username_folder" {
             ],
             Effect = "Allow",
             Resource = [
-                "arn:aws:s3:::hwe-2024-spring"
+                "arn:aws:s3:::hwe-bucket"
             ]
         },
         {
@@ -203,7 +203,7 @@ resource "aws_iam_policy" "allow_write_to_s3_username_folder" {
             ],
             Effect = "Allow",
             Resource = [
-                "arn:aws:s3:::hwe-2024-spring/$${aws:username}/*"
+                "arn:aws:s3:::hwe-bucket/$${aws:username}/*"
             ]
         }
     ]
@@ -217,27 +217,27 @@ resource "aws_iam_group_policy_attachment" "attach_allow_write_to_s3_username_fo
 }
 
 #S3 bucket
-resource "aws_s3_bucket" "hwe_2024_spring" {
+resource "aws_s3_bucket" "hwe_bucket" {
     bucket = "hwe-bucket"
 }
 
 #KMS key
-resource "aws_kms_key" "hwe_2024_spring_kms_key" {
+resource "aws_kms_key" "hwe_kms_key" {
   description = "KMS key used to encrypt MSK username + password"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
   key_usage = "ENCRYPT_DECRYPT"
 }
 
 #KMS key alias
-resource "aws_kms_alias" "hwe_2024_spring_kms_key_alias" {
+resource "aws_kms_alias" "hwe_kms_key_alias" {
   name = "alias/hwe_kms_key"
-  target_key_id = aws_kms_key.hwe_2024_spring_kms_key.key_id
+  target_key_id = aws_kms_key.hwe_kms_key.key_id
 }
 
 #Secret for MSK username/password
 resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
-  name = "AmazonMSK_hwe_secret2" #This name MUST start with AmazonMSK_!
-  kms_key_id = aws_kms_key.hwe_2024_spring_kms_key.key_id
+  name = "AmazonMSK_hwe_secret3" #This name MUST start with AmazonMSK_!
+  kms_key_id = aws_kms_key.hwe_kms_key.key_id
 }
 
 variable "msk_connection_info" {
