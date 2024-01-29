@@ -59,11 +59,38 @@ resource "aws_msk_cluster" "hwe_msk" {
         client_authentication {
           sasl {
             scram = true
-          }
+            }
         }
       }
     }
   }
+}
+
+resource "aws_msk_scram_secret_association" "example" {
+  cluster_arn     = aws_msk_cluster.hwe_msk.arn
+  secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
+  depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
+}
+
+#What should this be?
+data "aws_iam_policy_document" "secret_access_policy" {
+  statement {
+    sid    = "AWSKafkaResourcePolicy"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["kafka.amazonaws.com"]
+    }
+
+    actions   = ["secretsmanager:getSecretValue"]
+    resources = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
+  }
+}
+
+resource "aws_secretsmanager_secret_policy" "msk_secret_policy" {
+  secret_arn = aws_secretsmanager_secret.amazonmsk_hwe_secret.arn
+  policy     = data.aws_iam_policy_document.secret_access_policy.json
 }
 
 output "zookeeper_connect_string" {
