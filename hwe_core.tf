@@ -252,4 +252,3 @@ resource "aws_secretsmanager_secret_version" "amazonmsk_hwe_secret_value" {
   secret_id = aws_secretsmanager_secret.amazonmsk_hwe_secret.id
   secret_string = jsonencode(var.msk_connection_info)
 }
-
