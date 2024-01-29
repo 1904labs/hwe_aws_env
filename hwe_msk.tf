@@ -36,13 +36,13 @@ resource "aws_security_group" "sg" {
 }
 
 
-resource "aws_msk_cluster" "example" {
-  cluster_name           = "example"
+resource "aws_msk_cluster" "hwe_msk" {
+  cluster_name           = "hwe-msk"
   kafka_version          = "3.2.0"
   number_of_broker_nodes = 3
 
   broker_node_group_info {
-    instance_type = "kafka.m5.large"
+    instance_type = "kafka.t3.small"
     client_subnets = [
       aws_subnet.subnet_az1.id,
       aws_subnet.subnet_az2.id,
@@ -50,20 +50,29 @@ resource "aws_msk_cluster" "example" {
     ]
     storage_info {
       ebs_storage_info {
-        volume_size = 1000
+        volume_size = 10
       }
     }
     security_groups = [aws_security_group.sg.id]
+    connectivity_info {
+      vpc_connectivity {
+        client_authentication {
+          sasl {
+            scram = true
+          }
+        }
+      }
+    }
   }
 }
 
 output "zookeeper_connect_string" {
-  value = aws_msk_cluster.example.zookeeper_connect_string
+  value = aws_msk_cluster.hwe_msk.zookeeper_connect_string
 }
 
 output "bootstrap_brokers_tls" {
   description = "TLS connection host:port pairs"
-  value       = aws_msk_cluster.example.bootstrap_brokers_tls
+  value       = aws_msk_cluster.hwe_msk.bootstrap_brokers_tls
 }
 
 /*
