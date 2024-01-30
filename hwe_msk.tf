@@ -37,15 +37,16 @@ resource "aws_security_group" "sg" {
 
 #Secret for MSK username/password
 resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
-  name = "AmazonMSK_hwe_secret3" #This name MUST start with AmazonMSK_!
+  name = "AmazonMSK_hwe_secret5" #This name MUST start with AmazonMSK_!
   kms_key_id = aws_kms_key.hwe_kms_key.key_id
+  recovery_window_in_days = 0
 }
 
 variable "msk_connection_info" {
   sensitive = true
   default = {
     username = "1904labs"
-    password = "TODO: Set password securely"
+    password = "1904labsSecurePassword!"
   }
 }
 
@@ -54,7 +55,25 @@ resource "aws_secretsmanager_secret_version" "amazonmsk_hwe_secret_value" {
   secret_string = jsonencode(var.msk_connection_info)
 }
 
+data "aws_iam_policy_document" "secret_access_policy" {
+  statement {
+    sid    = "AWSKafkaResourcePolicy"
+    effect = "Allow"
 
+    principals {
+      type        = "Service"
+      identifiers = ["kafka.amazonaws.com"]
+    }
+
+    actions   = ["secretsmanager:getSecretValue"]
+    resources = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
+  }
+}
+
+resource "aws_secretsmanager_secret_policy" "msk_secret_policy" {
+  secret_arn = aws_secretsmanager_secret.amazonmsk_hwe_secret.arn
+  policy     = data.aws_iam_policy_document.secret_access_policy.json
+}
 
 resource "aws_msk_cluster" "hwe_msk" {
   cluster_name           = "hwe-msk"
@@ -92,26 +111,6 @@ resource "aws_msk_scram_secret_association" "example" {
   depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
 }
 
-#What should this be?
-data "aws_iam_policy_document" "secret_access_policy" {
-  statement {
-    sid    = "AWSKafkaResourcePolicy"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["kafka.amazonaws.com"]
-    }
-
-    actions   = ["secretsmanager:getSecretValue"]
-    resources = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
-  }
-}
-
-resource "aws_secretsmanager_secret_policy" "msk_secret_policy" {
-  secret_arn = aws_secretsmanager_secret.amazonmsk_hwe_secret.arn
-  policy     = data.aws_iam_policy_document.secret_access_policy.json
-}
 
 output "zookeeper_connect_string" {
   value = aws_msk_cluster.hwe_msk.zookeeper_connect_string
