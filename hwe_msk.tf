@@ -58,7 +58,7 @@ resource "aws_secretsmanager_secret_version" "amazonmsk_hwe_secret_value" {
 
 resource "aws_msk_cluster" "hwe_msk" {
   cluster_name           = "hwe-msk"
-  kafka_version          = "3.2.0"
+  kafka_version          = "2.6.2" #Using later versions than this causes a multi-VPC error...
   number_of_broker_nodes = 3
 
   broker_node_group_info {
