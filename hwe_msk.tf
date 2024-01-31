@@ -17,18 +17,21 @@ resource "aws_subnet" "subnet_az1" {
   availability_zone = data.aws_availability_zones.azs.names[0]
   cidr_block        = "10.0.0.0/20"
   vpc_id            = aws_vpc.hwe_vpc.id
+  map_public_ip_on_launch = true
 }
 
 resource "aws_subnet" "subnet_az2" {
   availability_zone = data.aws_availability_zones.azs.names[1]
   cidr_block        = "10.0.16.0/20"
   vpc_id            = aws_vpc.hwe_vpc.id
+  map_public_ip_on_launch = true
 }
 
 resource "aws_subnet" "subnet_az3" {
   availability_zone = data.aws_availability_zones.azs.names[2]
   cidr_block        = "10.0.32.0/20"
   vpc_id            = aws_vpc.hwe_vpc.id
+  map_public_ip_on_launch = true
 }
 
 resource "aws_security_group" "sg" {
@@ -93,6 +96,16 @@ resource "aws_msk_cluster" "hwe_msk" {
       }
     }
     security_groups = [aws_security_group.sg.id]
+  }
+  client_authentication {
+    sasl {
+      scram = true
+    }
+  }
+  configuration_info {
+    arn = "arn:aws:kafka:us-east-1:153601099083:configuration/dont-allow-everyone-if-no-acl-found/529fc726-c6d5-4a40-b779-4c1400d43f5c-16"
+    revision = 1
+  }
     #connectivity_info {
     #  vpc_connectivity {
     #    client_authentication {
@@ -102,14 +115,13 @@ resource "aws_msk_cluster" "hwe_msk" {
     #    }
     #  }
     #}
-  }
 }
 
-#resource "aws_msk_scram_secret_association" "example" {
-#  cluster_arn     = aws_msk_cluster.hwe_msk.arn
-#  secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
-#  depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
-#}
+resource "aws_msk_scram_secret_association" "example" {
+  cluster_arn     = aws_msk_cluster.hwe_msk.arn
+  secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
+  depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
+}
 
 
 output "zookeeper_connect_string" {
