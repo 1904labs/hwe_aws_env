@@ -8,6 +8,55 @@ resource "aws_iam_group" "hwe_students" {
   name = "hwe-students"
 }
 
+resource "aws_iam_policy" "allow_student_s3_permissions" {
+  name = "allow-student-s3-permissions"
+  description = ""
+  policy = jsonencode(
+{
+    Version = "2012-10-17",
+    Statement = [
+        {
+            Sid = "AllowsListingAllBuckets",
+            Action = [
+                "s3:ListAllMyBuckets",
+                "s3:GetBucketLocation"
+            ],
+            Effect = "Allow",
+            Resource = [
+                "arn:aws:s3:::*"
+            ]
+        },
+        {
+            Sid = "AllowListingOfSubfoldersInHWEBucket",
+            Action = [
+                "s3:ListBucket"
+            ],
+            Effect = "Allow",
+            Resource = [
+                "arn:aws:s3:::hwe-bucket"
+            ]
+        },
+        {
+            Sid = "AllowAllActionsInMyOwnSubfolder",
+            Action = [
+                "s3:*"
+            ],
+            Effect = "Allow",
+            Resource = [
+                "arn:aws:s3:::hwe-bucket/$${aws:username}/*"
+            ]
+        }
+    ]
+}
+
+  )
+}
+
+resource "aws_iam_group_policy_attachment" "attach_s3_student" {
+  group      = aws_iam_group.hwe_students.name
+  policy_arn = aws_iam_policy.allow_student_s3_permissions.arn
+}
+
 resource "aws_iam_policy" "allow_viewing_permissions_on_s3_buckets_through_console" {
   name        = "allow-viewing-permissions-on-s3-buckets-through-console2"
   description = "Allow users to view S3 buckets through AWS GUI"
@@ -60,7 +109,7 @@ resource "aws_iam_group_policy_attachment" "attach_athena_write_results" {
 }
 
 resource "aws_iam_policy" "allow_full_read_on_athena" {
-  name        = "alllow-full-read-on-athena"
+  name        = "allow-full-read-on-athena"
   description = "Allow users to query Athena"
   policy      = jsonencode(
     {
@@ -214,22 +263,4 @@ resource "aws_iam_policy" "allow_write_to_s3_username_folder" {
 resource "aws_iam_group_policy_attachment" "attach_allow_write_to_s3_username_folder" {
   group      = aws_iam_group.hwe_students.name
   policy_arn = aws_iam_policy.allow_write_to_s3_username_folder.arn
-}
-
-#S3 bucket
-resource "aws_s3_bucket" "hwe_bucket" {
-    bucket = "hwe-bucket"
-}
-
-#KMS key
-resource "aws_kms_key" "hwe_kms_key" {
-  description = "KMS key used to encrypt MSK username + password"
-  customer_master_key_spec = "SYMMETRIC_DEFAULT"
-  key_usage = "ENCRYPT_DECRYPT"
-}
-
-#KMS key alias
-resource "aws_kms_alias" "hwe_kms_key_alias" {
-  name = "alias/hwe_kms_key"
-  target_key_id = aws_kms_key.hwe_kms_key.key_id
 }
