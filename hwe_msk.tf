@@ -34,6 +34,31 @@ resource "aws_subnet" "subnet_az3" {
   map_public_ip_on_launch = true
 }
 
+resource "aws_internet_gateway" "hwe_igw" {
+ vpc_id = aws_vpc.hwe_vpc.id
+}
+
+resource "aws_route_table" "hwe_rt" {
+    vpc_id = aws_vpc.hwe_vpc.id
+route {
+        cidr_block = "0.0.0.0/0"
+        gateway_id = aws_internet_gateway.hwe_igw.id
+    }
+}
+
+resource "aws_route_table_association" "subnet_az1_associate_public" {
+    subnet_id = aws_subnet.subnet_az1.id
+    route_table_id = aws_route_table.hwe_rt.id
+}
+resource "aws_route_table_association" "subnet_az2_associate_public" {
+    subnet_id = aws_subnet.subnet_az2.id
+    route_table_id = aws_route_table.hwe_rt.id
+}
+resource "aws_route_table_association" "subnet_az3_associate_public" {
+    subnet_id = aws_subnet.subnet_az3.id
+    route_table_id = aws_route_table.hwe_rt.id
+}
+
 resource "aws_security_group" "sg" {
   vpc_id = aws_vpc.hwe_vpc.id
 }
@@ -78,6 +103,28 @@ resource "aws_secretsmanager_secret_policy" "msk_secret_policy" {
   policy     = data.aws_iam_policy_document.secret_access_policy.json
 }
 
+resource "aws_msk_configuration" "dont_allow_everyone_if_no_acl_found" {
+  kafka_versions = ["2.6.2"]
+  name           = "dont-allow-everyone-if-no-acl-found"
+
+  server_properties = <<PROPERTIES
+auto.create.topics.enable=false
+default.replication.factor=3
+min.insync.replicas=2
+num.io.threads=8
+num.network.threads=5
+num.partitions=1
+num.replica.fetchers=2
+replica.lag.time.max.ms=30000
+socket.receive.buffer.bytes=102400
+socket.request.max.bytes=104857600
+socket.send.buffer.bytes=102400
+unclean.leader.election.enable=true
+zookeeper.session.timeout.ms=18000
+allow.everyone.if.no.acl.found=false
+PROPERTIES
+}
+
 resource "aws_msk_cluster" "hwe_msk" {
   cluster_name           = "hwe-msk"
   kafka_version          = "2.6.2" #Using later versions than this causes a multi-VPC error...
@@ -103,21 +150,12 @@ resource "aws_msk_cluster" "hwe_msk" {
     }
   }
   configuration_info {
-    arn = "arn:aws:kafka:us-east-1:153601099083:configuration/dont-allow-everyone-if-no-acl-found/529fc726-c6d5-4a40-b779-4c1400d43f5c-16"
+    arn = aws_msk_configuration.dont_allow_everyone_if_no_acl_found.arn
     revision = 1
   }
-    #connectivity_info {
-    #  vpc_connectivity {
-    #    client_authentication {
-    #      sasl {
-    #        scram = true
-    #        }
-    #    }
-    #  }
-    #}
 }
 
-resource "aws_msk_scram_secret_association" "example" {
+resource "aws_msk_scram_secret_association" "msk_secret_association" {
   cluster_arn     = aws_msk_cluster.hwe_msk.arn
   secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
   depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
@@ -128,7 +166,19 @@ output "zookeeper_connect_string" {
   value = aws_msk_cluster.hwe_msk.zookeeper_connect_string
 }
 
-output "bootstrap_brokers_tls" {
-  description = "TLS connection host:port pairs"
-  value       = aws_msk_cluster.hwe_msk.bootstrap_brokers_tls
+output "bootstrap_brokers_sasl_scram" {
+  description = "SASL/SCRAM connection host:port pairs"
+  value       = aws_msk_cluster.hwe_msk.bootstrap_brokers_public_sasl_scram
+}
+
+
+#Edge node
+resource "aws_instance" "edge_node" {
+  ami = "ami-0a3c3a20c09d6f377"
+  instance_type     = "t2.micro"
+  associate_public_ip_address = true
+  subnet_id = aws_subnet.subnet_az1.id
+   tags = {
+    Name = "msk-edge-node"
+  }
 }
