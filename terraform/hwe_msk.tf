@@ -62,9 +62,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_kafka_ipv4" {
 resource "aws_vpc_security_group_egress_rule" "allow_outbound_ipv4" {
   security_group_id = aws_security_group.allow_ssh_zk_kafka_outbound.id
   cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 0
-  ip_protocol       = -1
-  to_port           = 65535
+  ip_protocol       = "-1"
 }
 
 resource "aws_subnet" "subnet_az1" {
@@ -175,51 +173,51 @@ allow.everyone.if.no.acl.found=false
 PROPERTIES
 }
 
-#resource "aws_msk_cluster" "hwe_msk" {
-#  cluster_name           = "hwe-msk"
-#  kafka_version          = "2.6.2" #Using later versions than this causes a multi-VPC error...
-#  number_of_broker_nodes = 3
-#
-#  broker_node_group_info {
-#    instance_type = "kafka.t3.small"
-#    client_subnets = [
-#      aws_subnet.subnet_az1.id,
-#      aws_subnet.subnet_az2.id,
-#      aws_subnet.subnet_az3.id,
-#    ]
-#    storage_info {
-#      ebs_storage_info {
-#        volume_size = 10
-#      }
-#    }
-#    security_groups = [aws_security_group.allow_ssh_zk_kafka_outbound.id]
-#  }
-#  client_authentication {
-#    sasl {
-#      scram = true
-#    }
-#  }
-#  configuration_info {
-#    arn = aws_msk_configuration.dont_allow_everyone_if_no_acl_found.arn
-#    revision = 1
-#  }
-#}
-#
-#resource "aws_msk_scram_secret_association" "msk_secret_association" {
-#  cluster_arn     = aws_msk_cluster.hwe_msk.arn
-#  secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
-#  depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
-#}
-#
-#
-#output "zookeeper_connect_string" {
-#  value = aws_msk_cluster.hwe_msk.zookeeper_connect_string
-#}
-#
-#output "bootstrap_brokers_sasl_scram" {
-#  description = "SASL/SCRAM connection host:port pairs"
-#  value       = aws_msk_cluster.hwe_msk.bootstrap_brokers_public_sasl_scram
-#}
+resource "aws_msk_cluster" "hwe_msk" {
+  cluster_name           = "hwe-msk"
+  kafka_version          = "2.6.2" #Using later versions than this causes a multi-VPC error...
+  number_of_broker_nodes = 3
+
+  broker_node_group_info {
+    instance_type = "kafka.t3.small"
+    client_subnets = [
+      aws_subnet.subnet_az1.id,
+      aws_subnet.subnet_az2.id,
+      aws_subnet.subnet_az3.id,
+    ]
+    storage_info {
+      ebs_storage_info {
+        volume_size = 10
+      }
+    }
+    security_groups = [aws_security_group.allow_ssh_zk_kafka_outbound.id]
+  }
+  client_authentication {
+    sasl {
+      scram = true
+    }
+  }
+  configuration_info {
+    arn = aws_msk_configuration.dont_allow_everyone_if_no_acl_found.arn
+    revision = 1
+  }
+}
+
+resource "aws_msk_scram_secret_association" "msk_secret_association" {
+  cluster_arn     = aws_msk_cluster.hwe_msk.arn
+  secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
+  depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
+}
+
+
+output "zookeeper_connect_string" {
+  value = aws_msk_cluster.hwe_msk.zookeeper_connect_string
+}
+
+output "bootstrap_brokers_sasl_scram" {
+  description = "SASL/SCRAM connection host:port pairs"
+  value       = aws_msk_cluster.hwe_msk.bootstrap_brokers_public_sasl_scram
+}
 
 
 #Edge node
