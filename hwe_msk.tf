@@ -93,23 +93,23 @@ resource "aws_msk_cluster" "hwe_msk" {
       }
     }
     security_groups = [aws_security_group.sg.id]
-    connectivity_info {
-      vpc_connectivity {
-        client_authentication {
-          sasl {
-            scram = true
-            }
-        }
-      }
-    }
+    #connectivity_info {
+    #  vpc_connectivity {
+    #    client_authentication {
+    #      sasl {
+    #        scram = true
+    #        }
+    #    }
+    #  }
+    #}
   }
 }
 
-resource "aws_msk_scram_secret_association" "example" {
-  cluster_arn     = aws_msk_cluster.hwe_msk.arn
-  secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
-  depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
-}
+#resource "aws_msk_scram_secret_association" "example" {
+#  cluster_arn     = aws_msk_cluster.hwe_msk.arn
+#  secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
+#  depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
+#}
 
 
 output "zookeeper_connect_string" {
