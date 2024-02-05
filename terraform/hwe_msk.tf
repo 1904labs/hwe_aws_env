@@ -1,21 +1,21 @@
 #KMS key
 resource "aws_kms_key" "hwe_kms_key" {
-  description = "KMS key used to encrypt MSK username + password"
+  description              = "KMS key used to encrypt MSK username + password"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
-  key_usage = "ENCRYPT_DECRYPT"
+  key_usage                = "ENCRYPT_DECRYPT"
 }
 
 #KMS key alias
 resource "aws_kms_alias" "hwe_kms_key_alias" {
-  name = "alias/hwe_kms_key"
+  name          = "alias/hwe_kms_key"
   target_key_id = aws_kms_key.hwe_kms_key.key_id
 }
 
 #VPC
 resource "aws_vpc" "hwe_vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block       = "10.0.0.0/16"
   instance_tenancy = "default"
-  
+
   tags = {
     Name = "hwe-vpc"
   }
@@ -66,55 +66,55 @@ resource "aws_vpc_security_group_egress_rule" "allow_outbound_ipv4" {
 }
 
 resource "aws_subnet" "subnet_az1" {
-  availability_zone = data.aws_availability_zones.azs.names[0]
-  cidr_block        = "10.0.0.0/20"
-  vpc_id            = aws_vpc.hwe_vpc.id
+  availability_zone       = data.aws_availability_zones.azs.names[0]
+  cidr_block              = "10.0.0.0/20"
+  vpc_id                  = aws_vpc.hwe_vpc.id
   map_public_ip_on_launch = true
 }
 
 resource "aws_subnet" "subnet_az2" {
-  availability_zone = data.aws_availability_zones.azs.names[1]
-  cidr_block        = "10.0.16.0/20"
-  vpc_id            = aws_vpc.hwe_vpc.id
+  availability_zone       = data.aws_availability_zones.azs.names[1]
+  cidr_block              = "10.0.16.0/20"
+  vpc_id                  = aws_vpc.hwe_vpc.id
   map_public_ip_on_launch = true
 }
 
 resource "aws_subnet" "subnet_az3" {
-  availability_zone = data.aws_availability_zones.azs.names[2]
-  cidr_block        = "10.0.32.0/20"
-  vpc_id            = aws_vpc.hwe_vpc.id
+  availability_zone       = data.aws_availability_zones.azs.names[2]
+  cidr_block              = "10.0.32.0/20"
+  vpc_id                  = aws_vpc.hwe_vpc.id
   map_public_ip_on_launch = true
 }
 
 resource "aws_internet_gateway" "hwe_igw" {
- vpc_id = aws_vpc.hwe_vpc.id
+  vpc_id = aws_vpc.hwe_vpc.id
 }
 
 resource "aws_route_table" "hwe_rt" {
-    vpc_id = aws_vpc.hwe_vpc.id
-route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.hwe_igw.id
-    }
+  vpc_id = aws_vpc.hwe_vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.hwe_igw.id
+  }
 }
 
 resource "aws_route_table_association" "subnet_az1_associate_public" {
-    subnet_id = aws_subnet.subnet_az1.id
-    route_table_id = aws_route_table.hwe_rt.id
+  subnet_id      = aws_subnet.subnet_az1.id
+  route_table_id = aws_route_table.hwe_rt.id
 }
 resource "aws_route_table_association" "subnet_az2_associate_public" {
-    subnet_id = aws_subnet.subnet_az2.id
-    route_table_id = aws_route_table.hwe_rt.id
+  subnet_id      = aws_subnet.subnet_az2.id
+  route_table_id = aws_route_table.hwe_rt.id
 }
 resource "aws_route_table_association" "subnet_az3_associate_public" {
-    subnet_id = aws_subnet.subnet_az3.id
-    route_table_id = aws_route_table.hwe_rt.id
+  subnet_id      = aws_subnet.subnet_az3.id
+  route_table_id = aws_route_table.hwe_rt.id
 }
 
 #Secret for MSK username/password
 resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
-  name = "AmazonMSK_hwe_secret5" #This name MUST start with AmazonMSK_!
-  kms_key_id = aws_kms_key.hwe_kms_key.key_id
+  name                    = "AmazonMSK_hwe_secret5" #This name MUST start with AmazonMSK_!
+  kms_key_id              = aws_kms_key.hwe_kms_key.key_id
   recovery_window_in_days = 0
 }
 
@@ -127,7 +127,7 @@ variable "msk_connection_info" {
 }
 
 resource "aws_secretsmanager_secret_version" "amazonmsk_hwe_secret_value" {
-  secret_id = aws_secretsmanager_secret.amazonmsk_hwe_secret.id
+  secret_id     = aws_secretsmanager_secret.amazonmsk_hwe_secret.id
   secret_string = jsonencode(var.msk_connection_info)
 }
 
@@ -198,7 +198,7 @@ resource "aws_msk_cluster" "hwe_msk" {
     }
   }
   configuration_info {
-    arn = aws_msk_configuration.dont_allow_everyone_if_no_acl_found.arn
+    arn      = aws_msk_configuration.dont_allow_everyone_if_no_acl_found.arn
     revision = 1
   }
 }
@@ -206,7 +206,7 @@ resource "aws_msk_cluster" "hwe_msk" {
 resource "aws_msk_scram_secret_association" "msk_secret_association" {
   cluster_arn     = aws_msk_cluster.hwe_msk.arn
   secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
-  depends_on = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
+  depends_on      = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
 }
 
 
@@ -222,13 +222,13 @@ output "bootstrap_brokers_sasl_scram" {
 
 #Edge node
 resource "aws_instance" "edge_node" {
-  ami = "ami-0a3c3a20c09d6f377"
-  instance_type     = "t2.micro"
+  ami                         = "ami-0a3c3a20c09d6f377"
+  instance_type               = "t2.micro"
   associate_public_ip_address = true
-  subnet_id = aws_subnet.subnet_az1.id
-  vpc_security_group_ids = [aws_security_group.allow_ssh_zk_kafka_outbound.id]
-  key_name = "ec2-kafka-key-pair" #Legacy key pair for HWE, created outside Terraform
-   tags = {
+  subnet_id                   = aws_subnet.subnet_az1.id
+  vpc_security_group_ids      = [aws_security_group.allow_ssh_zk_kafka_outbound.id]
+  key_name                    = "ec2-kafka-key-pair" #Legacy key pair for HWE, created outside Terraform
+  tags = {
     Name = "msk-edge-node"
   }
 }
