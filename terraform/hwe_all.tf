@@ -455,7 +455,7 @@ PROPERTIES
 
 resource "aws_msk_cluster" "hwe_msk" {
   cluster_name           = "hwe-msk"
-  kafka_version          = "2.6.2" #Using later versions than this causes a multi-VPC error...
+  kafka_version          = "3.5.1"
   number_of_broker_nodes = 3
 
   broker_node_group_info {
