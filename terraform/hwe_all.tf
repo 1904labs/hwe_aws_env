@@ -387,17 +387,28 @@ resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
   recovery_window_in_days = 0
 }
 
-variable "msk_connection_info" {
+variable "HWE_USERNAME" {
   sensitive = true
-  default = {
-    username = "1904labs"
-    password = "1904labsSecurePassword!"
+  type = string
+  description = "Username for the HWE Kafka cluster"
+}
+
+variable "HWE_PASSWORD" {
+  sensitive = true
+  type = string
+  description = "Password for the HWE Kafka cluster"
+}
+
+locals {
+  msk_connection_info = {
+    username = var.HWE_USERNAME
+    password = var.HWE_PASSWORD
   }
 }
 
 resource "aws_secretsmanager_secret_version" "amazonmsk_hwe_secret_value" {
   secret_id     = aws_secretsmanager_secret.amazonmsk_hwe_secret.id
-  secret_string = jsonencode(var.msk_connection_info)
+  secret_string = jsonencode(local.msk_connection_info)
 }
 
 data "aws_iam_policy_document" "secret_access_policy" {
