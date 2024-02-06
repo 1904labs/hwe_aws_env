@@ -280,12 +280,6 @@ resource "aws_kms_key" "hwe_kms_key" {
   key_usage                = "ENCRYPT_DECRYPT"
 }
 
-#KMS key alias
-resource "aws_kms_alias" "hwe_kms_key_alias" {
-  name          = "alias/hwe_kms_key"
-  target_key_id = aws_kms_key.hwe_kms_key.key_id
-}
-
 #VPC
 resource "aws_vpc" "hwe_vpc" {
   cidr_block       = "10.0.0.0/16"
