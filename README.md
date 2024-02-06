@@ -47,7 +47,7 @@ MSK clusters cannot be created with public access turned on - they must be creat
 #Set up ZK variable
 export ZK=#Use the PLAINTEXT/2181 ZK connection string, not the TLS/2182 one
 #install Java
-sudo dnf install java-11-amazon-corretto-devel -y]
+sudo dnf install java-11-amazon-corretto-devel -y
 #Install kafka CLI tools
 wget https://archive.apache.org/dist/kafka/2.6.2/kafka_2.12-2.6.2.tgz
 tar -xvf kafka_2.12-2.6.2.tgz
@@ -55,7 +55,7 @@ tar -xvf kafka_2.12-2.6.2.tgz
 cd kafka_2.12-2.6.2/bin
 ./kafka-acls.sh --authorizer-properties zookeeper.connect=$ZK --add --allow-principal 'User:*' --operation All --topic '*' --group '*'
 #Create topics
-./kafka-topics.sh --create --zookeeper $ZK --replication-factor 3 --partitions 1 --topic mytopic
+./kafka-topics.sh --create --zookeeper $ZK --replication-factor 3 --partitions 1 --topic kafka-connection-test
 ```
 
 ### Setting up the Superset master node
