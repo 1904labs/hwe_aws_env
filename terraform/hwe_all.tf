@@ -388,14 +388,14 @@ resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
 }
 
 variable "HWE_USERNAME" {
-  sensitive = true
-  type = string
+  sensitive   = true
+  type        = string
   description = "Username for the HWE Kafka cluster"
 }
 
 variable "HWE_PASSWORD" {
-  sensitive = true
-  type = string
+  sensitive   = true
+  type        = string
   description = "Password for the HWE Kafka cluster"
 }
 
