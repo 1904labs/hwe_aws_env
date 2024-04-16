@@ -31,7 +31,7 @@ Under the current curriculum:
 
 ### Special manual setup step needed for MSK
 
-MSK clusters cannot be created with public access turned on - they must be created as private clusters, then they can be modified to enable public access. The `hwe_msk.tf` file currently creates the private MSK cluster, then an administrator has to enable public access via the console. This is very straightforward using the GUI but does take ~30 minutes to run.
+MSK clusters cannot be created with public access turned on - they must be created as private clusters, then they can be modified to enable public access. After the MSK cluster has been created, an administrator has to enable public access via the console. This is very straightforward using the GUI but does take ~30 minutes to run.
 
 ## Server configuration
 
