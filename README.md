@@ -15,7 +15,7 @@ Note: All `terraform` commands should be run from the `hwe_aws_env/terraform` di
 
 Running `terraform destroy` will tear down the environment. Currently, there are 2 resources that may need manual intervention:
 
- * If any S3 buckets (`hwe-bucket` and `hwe-athena-results`) are not empty, they cannot be removed
+ * If any S3 buckets (`hwe-bucket`,  `hwe-athena-results`,) are not empty, they cannot be removed
  * If the IAM Group `hwe-students` has any members in it, it cannot be removed
  
 ## Infrastructure provisioning
@@ -31,9 +31,9 @@ Running `terraform apply` will create all resources in all `.tf` files inside th
 `hwe_superset.tf`: Defines the Superset node used in the course.
 
 Under the current curriculum:
-    * IAM, S3, and Athena are required for Week 3
-    * MSK is needed for Week 4
-    * Superset is needed for Week 7.
+* IAM, S3, and Athena are required for Week 3
+* MSK is needed for Week 4
+* Superset is needed for Week 7.
 
 ### Special manual setup step needed for MSK
 
@@ -61,30 +61,32 @@ cd kafka_2.12-2.6.2/bin
 ### Setting up the Superset master node
 https://1904labs.atlassian.net/wiki/spaces/DAT/pages/2189000705/Setting+up+a+Superset+server+in+EC2
 
-## Setting up users
+## Creating/Destroying users
 
-Setting up a user involves:
+Currently, creating and destroying users is handled outside of Terraform by some bash scripts. A file must be created with a list of student names ("handles"), 1 per line. This handles file drives the creation/deletion process.
 
-1. Creating the user
-2. Assigning them to the `hwe-students` group
-3. Creating a subfolder for them under the `hwe-bucket`
-4. Creating a file named `success_message` under that bucket containing a success message
+Creating users:
+`create_iam_users_for_hwe.sh handles.txt bucketsuffix`
+
+Deleting users:
+`delete_iam_users_for_hwe.sh handles.txt`
 
 ## Populating class data sources
 
 ### Setting up the Kafka connection test topic
+TODO
 
 ### Setting up the Kafka `reviews` topic
+TODO
 
 ### Setting up the static `customer` data on S3
+TODO
 
 ### Setting up the Athena query test data
+TODO
 
 ## Improvements to make to this repo
 * Add Athena workgroup information (primary, hwe, superset)
-* Make each module 100% independent so they can be run separately (imports?)
-* Need to make the secret read from an environment variable.
-* Script user creation process
-* Use Terraform backend on AWS instead of local
+* Possibly make each module 100% independent so they can be run separately rather than one large `hwe_all.tf` file
 * Key pair (ec2_kafka_key_pair) is currently managed outside of Terraform
 * Use a tool to script the bash/Python components of this
