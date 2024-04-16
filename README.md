@@ -22,13 +22,7 @@ Running `terraform destroy` will tear down the environment. Currently, there are
 
 Note: All `terraform` commands should be run from the `hwe_aws_env/terraform` directory.
 
-Running `terraform apply` will create all resources in all `.tf` files inside the `hwe_aws_env/terraform` folder. The terraform files are divided up into several files:
-
-`hwe_athena.tf`: Defines the Athena resources used in the course.
-`hwe_iam.tf`: Defines the IAM groups and policies used in the course.
-`hwe_msk.tf`: Defines the MSK Kafka cluster and Kafka edge node used in the course.
-`hwe_s3.tf`: Defines the S3 buckets used in the course.
-`hwe_superset.tf`: Defines the Superset node used in the course.
+Running `terraform apply` will create all resources in all `.tf` files inside the `hwe_aws_env/terraform` folder. All resources are currently in a large `hwe_all.tf` file.
 
 Under the current curriculum:
 * IAM, S3, and Athena are required for Week 3
