@@ -8,11 +8,11 @@ fi
 
 # Assign the argument to the HANDLES_FILE variable
 HANDLES_FILE=$1
+BUCKETNAME="hwe-bucket"
 
 # Loop through the file and perform actions for each handle
 while IFS= read -r handle; do
     # Delete the S3 directory and all files under it
-    BUCKETNAME="hwe-bucket"
     S3_PATH="s3://${BUCKETNAME}/${handle}"
     aws s3 rm "$S3_PATH" --recursive
 
