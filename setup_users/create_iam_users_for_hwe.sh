@@ -4,7 +4,7 @@ if [ $# -ne 2 ]; then
     echo "Pass 2 args, the filename of handles to create, and a suffix that will be appended to each users handle to create their initial password"
     exit 1
 fi
-BUCKETNAME="hwe-bucket"
+BUCKETNAME="hwe-fall-2024"
 GROUP_NAME="hwe-students"
 FILENAME=$1
 INITIAL_PASSWORD_SUFFIX=$2
@@ -54,7 +54,6 @@ while IFS= read -r handle; do
     else
         echo "Failed to enroll $handle in group $GROUP_NAME"
     fi
-    BUCKETNAME="hwe-bucket"
     echo "Congratulations! You have successfully connected to S3 and read a file under s3://${BUCKETNAME}/${handle}! Your credentials are set up correctly!" > success_message
     aws s3 cp success_message "s3://${BUCKETNAME}/${handle}/success_message"
     if [ $? -eq 0 ]; then

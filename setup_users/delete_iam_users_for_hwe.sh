@@ -8,7 +8,7 @@ fi
 
 # Assign the argument to the HANDLES_FILE variable
 HANDLES_FILE=$1
-BUCKETNAME="hwe-bucket"
+BUCKETNAME="hwe-fall-2024"
 
 # Loop through the file and perform actions for each handle
 while IFS= read -r handle; do

@@ -8,6 +8,45 @@ resource "aws_iam_group" "hwe_students" {
   name = "hwe-students"
 }
 
+#Make the IAM console less ugly for students, lots of red errors that look broken which will make them think something is wrong
+resource "aws_iam_policy" "allow_student_iam_read_for_themselves" {
+  name        = "allow-student-iam-read-for-themselves"
+  description = ""
+  policy = jsonencode(
+    {
+      Version = "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AllowAccountLevelAccess",
+          "Effect": "Allow",
+          "Action": [
+            "iam:ListAccountAliases",
+            "iam:GetAccountSummary",
+            "iam:ListAccessKeys"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Sid": "AllowUserToManageTheirOwnMFA",
+          "Effect": "Allow",
+          "Action": [
+            "iam:EnableMFADevice",
+            "iam:GetMFADevice",
+            "iam:ListMFADevices",
+            "iam:ResyncMFADevice"
+          ],
+          "Resource": "arn:aws:iam::*:user/$${aws:username}"
+        },
+      ]
+    }
+  )
+}
+
+resource "aws_iam_group_policy_attachment" "attach_iam_read_for_themselves" {
+  group      = aws_iam_group.hwe_students.name
+  policy_arn = aws_iam_policy.allow_student_iam_read_for_themselves.arn
+}
+
 resource "aws_iam_policy" "allow_student_s3_permissions" {
   name        = "allow-student-s3-permissions"
   description = ""
@@ -33,7 +72,17 @@ resource "aws_iam_policy" "allow_student_s3_permissions" {
           ],
           Effect = "Allow",
           Resource = [
-            "arn:aws:s3:::hwe-bucket"
+            "arn:aws:s3:::${aws_s3_bucket.hwe_bucket.bucket}"
+          ]
+        },
+        {
+          Sid = "AllowListOnAthenaBucket",
+          Action = [
+            "s3:ListBucket"
+          ],
+          Effect = "Allow",
+          Resource = [
+            "arn:aws:s3:::hwe-athena-results"
           ]
         },
         {
@@ -43,7 +92,7 @@ resource "aws_iam_policy" "allow_student_s3_permissions" {
           ],
           Effect = "Allow",
           Resource = [
-            "arn:aws:s3:::hwe-bucket/$${aws:username}/*"
+            "arn:aws:s3:::${aws_s3_bucket.hwe_bucket.bucket}/$${aws:username}/*"
           ]
         }
       ]
@@ -157,6 +206,34 @@ resource "aws_iam_group_policy_attachment" "attach_allow_full_read_on_athena" {
   policy_arn = aws_iam_policy.allow_full_read_on_athena.arn
 }
 
+resource "aws_iam_policy" "allow_full_read_on_glue" {
+  name        = "allow-full-read-on-glue"
+  description = "Allow users to query Glue"
+  policy = jsonencode(
+    {
+      Version = "2012-10-17",
+      Statement = [
+        {
+          Sid    = "FullGlueReadAccess",
+          Effect = "Allow",
+          Action = [
+            "glue:GetDatabase",
+            "glue:GetDatabases",
+            "glue:GetTables",
+            "glue:GetTable"
+          ],
+          Resource = "*"
+        }
+      ]
+    }
+  )
+}
+
+resource "aws_iam_group_policy_attachment" "attach_allow_full_read_on_glue" {
+  group      = aws_iam_group.hwe_students.name
+  policy_arn = aws_iam_policy.allow_full_read_on_glue.arn
+}
+
 resource "aws_iam_policy" "allow_manage_own_access_keys" {
   name        = "allow-manage-own-access-keys"
   description = "Allow users to fully manage their own access keys"
@@ -242,7 +319,7 @@ resource "aws_iam_policy" "allow_write_to_s3_username_folder" {
           ],
           Effect = "Allow",
           Resource = [
-            "arn:aws:s3:::hwe-bucket"
+            "arn:aws:s3:::${aws_s3_bucket.hwe_bucket.bucket}"
           ]
         },
         {
@@ -252,7 +329,7 @@ resource "aws_iam_policy" "allow_write_to_s3_username_folder" {
           ],
           Effect = "Allow",
           Resource = [
-            "arn:aws:s3:::hwe-bucket/$${aws:username}/*"
+            "arn:aws:s3:::${aws_s3_bucket.hwe_bucket.bucket}/$${aws:username}/*"
           ]
         }
       ]
@@ -266,7 +343,7 @@ resource "aws_iam_group_policy_attachment" "attach_allow_write_to_s3_username_fo
 }
 
 resource "aws_s3_bucket" "hwe_bucket" {
-  bucket = "hwe-bucket"
+  bucket = "hwe-${var.SEMESTER}"
 }
 
 resource "aws_s3_bucket" "hwe_athena_results_bucket" {
@@ -385,6 +462,12 @@ resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
   name                    = "AmazonMSK_hwe_secret5" #This name MUST start with AmazonMSK_!
   kms_key_id              = aws_kms_key.hwe_kms_key.key_id
   recovery_window_in_days = 0
+}
+
+variable "SEMESTER" {
+  sensitive   = false
+  type        = string
+  description = "Semester for this session, formatted season-yyyy (fall-2024, spring-2025, etc.)"
 }
 
 variable "HWE_USERNAME" {
