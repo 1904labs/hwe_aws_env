@@ -33,7 +33,10 @@ resource "aws_iam_policy" "allow_student_iam_read_for_themselves" {
             "iam:EnableMFADevice",
             "iam:GetMFADevice",
             "iam:ListMFADevices",
-            "iam:ResyncMFADevice"
+            "iam:ResyncMFADevice",
+            "iam:ListSigningCertificates",
+            "iam:GetLoginProfile",
+            "iam:ListUserTags"
           ],
           "Resource": "arn:aws:iam::*:user/$${aws:username}"
         },
@@ -220,7 +223,11 @@ resource "aws_iam_policy" "allow_full_read_on_glue" {
             "glue:GetDatabase",
             "glue:GetDatabases",
             "glue:GetTables",
-            "glue:GetTable"
+            "glue:GetTable",
+            "glue:CreateTable",
+            "glue:UpdateTable",
+            "glue:DeleteTable",
+            "glue:UpdateTable"
           ],
           Resource = "*"
         }
