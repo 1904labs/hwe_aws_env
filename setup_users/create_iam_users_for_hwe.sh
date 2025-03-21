@@ -4,7 +4,9 @@ if [ $# -ne 2 ]; then
     echo "Pass 2 args, the filename of handles to create, and a suffix that will be appended to each users handle to create their initial password"
     exit 1
 fi
-BUCKETNAME="hwe-fall-2024"
+
+source ../terraform/terraform.tfvars
+BUCKETNAME="hwe-${SEMESTER}"
 GROUP_NAME="hwe-students"
 FILENAME=$1
 INITIAL_PASSWORD_SUFFIX=$2
@@ -61,4 +63,5 @@ while IFS= read -r handle; do
     else
         echo "Failed to create directory s3://${BUCKETNAME}/${handle}"
     fi
+    rm success_message
 done < "$FILENAME"
