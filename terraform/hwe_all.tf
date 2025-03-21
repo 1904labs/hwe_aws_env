@@ -351,10 +351,20 @@ resource "aws_iam_group_policy_attachment" "attach_allow_write_to_s3_username_fo
 
 resource "aws_s3_bucket" "hwe_bucket" {
   bucket = "hwe-${var.SEMESTER}"
+ lifecycle {
+    prevent_destroy = false
+  }
+
+  force_destroy = true
 }
 
 resource "aws_s3_bucket" "hwe_athena_results_bucket" {
   bucket = "hwe-athena-results"
+ lifecycle {
+    prevent_destroy = false
+  }
+
+  force_destroy = true
 }
 
 #KMS key
@@ -466,7 +476,7 @@ resource "aws_route_table_association" "subnet_az3_associate_public" {
 
 #Secret for MSK username/password
 resource "aws_secretsmanager_secret" "amazonmsk_hwe_secret" {
-  name                    = "AmazonMSK_hwe_secret5" #This name MUST start with AmazonMSK_!
+  name                    = "AmazonMSK_hwe_secret" #This name MUST start with AmazonMSK_!
   kms_key_id              = aws_kms_key.hwe_kms_key.key_id
   recovery_window_in_days = 0
 }
@@ -572,13 +582,11 @@ resource "aws_msk_cluster" "hwe_msk" {
     revision = 1
   }
 }
-
 resource "aws_msk_scram_secret_association" "msk_secret_association" {
   cluster_arn     = aws_msk_cluster.hwe_msk.arn
   secret_arn_list = [aws_secretsmanager_secret.amazonmsk_hwe_secret.arn]
   depends_on      = [aws_secretsmanager_secret_version.amazonmsk_hwe_secret_value]
 }
-
 
 output "zookeeper_connect_string" {
   value = aws_msk_cluster.hwe_msk.zookeeper_connect_string
@@ -597,13 +605,96 @@ resource "aws_instance" "edge_node" {
   associate_public_ip_address = true
   subnet_id                   = aws_subnet.subnet_az1.id
   vpc_security_group_ids      = [aws_security_group.allow_ssh_zk_kafka_outbound.id]
-  key_name                    = "ec2-kafka-key-pair" #Legacy key pair for HWE, created outside Terraform
   tags = {
     Name = "msk-edge-node"
   }
 }
 
-#Supetset node
+resource "aws_security_group" "superset_sg" {
+  name        = "superset-sg"
+  description = "Security group for Superset with AmazonAthenaFullAccess and AmazonS3FullAccess"
+  vpc_id      = aws_vpc.hwe_vpc.id
+
+  tags = {
+    Name = "superset-sg"
+  }
+}
+
+resource "aws_iam_role" "superset_role" {
+  name               = "superset-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement: [
+      {
+        Effect    = "Allow",
+        Principal = { Service = "ec2.amazonaws.com" },
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy_attachment" "superset_athena_access" {
+  name       = "superset-athena-access"
+  roles      = [aws_iam_role.superset_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonAthenaFullAccess"
+}
+
+resource "aws_iam_policy_attachment" "superset_s3_access" {
+  name       = "superset-s3-access"
+  roles      = [aws_iam_role.superset_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+resource "aws_instance" "superset_master" {
+  ami                         = "ami-06aa3f7caf3a30282" # Ubuntu 20.04
+  instance_type               = "t2.large"
+  associate_public_ip_address = true
+  subnet_id                   = aws_subnet.subnet_az1.id
+  vpc_security_group_ids      = [aws_security_group.superset_sg.id]
+  iam_instance_profile        = aws_iam_instance_profile.superset_instance_profile.name
+
+  tags = {
+    Name = "superset-master"
+  }
+}
+
+resource "aws_iam_instance_profile" "superset_instance_profile" {
+  name = "superset-instance-profile"
+  role = aws_iam_role.superset_role.name
+}
+
+resource "aws_glue_catalog_database" "hwe" {
+  name = "hwe"
+}
+
+resource "aws_glue_catalog_table" "athena_test" {
+  name          = "athena_test"
+  database_name = aws_glue_catalog_database.hwe.name
+  table_type    = "EXTERNAL_TABLE"
+
+  storage_descriptor {
+    location      = "s3://${aws_s3_bucket.hwe_athena_results_bucket.bucket}/athena_test/"
+    input_format  = "org.apache.hadoop.mapred.TextInputFormat"
+    output_format = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+    ser_de_info {
+      serialization_library = "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe"
+    }
+    columns {
+      name = "message"
+      type = "string"
+    }
+  }
+}
+
+resource "aws_s3_object" "athena_success_message" {
+  bucket = aws_s3_bucket.hwe_athena_results_bucket.bucket
+  key    = "athena_test/athena_success_message.txt"
+  content = "Congratulations! You have successfully executed a query using Amazon Athena!"
+  acl     = "private"
+}
+
+#Superset node
 #resource "aws_instance" "superset_master" {
 #  ami = "ami-06aa3f7caf3a30282" #Ubuntu 20.04
 #  instance_type     = "t2.large"
