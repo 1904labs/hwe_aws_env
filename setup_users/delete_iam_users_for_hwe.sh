@@ -6,9 +6,10 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
+source ../terraform/terraform.tfvars
 # Assign the argument to the HANDLES_FILE variable
 HANDLES_FILE=$1
-BUCKETNAME="hwe-bucket"
+BUCKETNAME="hwe-${SEMESTER}"
 
 # Loop through the file and perform actions for each handle
 while IFS= read -r handle; do
